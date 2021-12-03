@@ -1,0 +1,114 @@
+#Start Here
+
+def Name_Finder(name):
+    '''str --> str
+
+    Function takes in a sample name and looks for in Sample_Name_Dict directory.
+    If the sample is not present it returns name as Unknown sample and prints and error message.
+    If name is present the function returns the correct key.
+
+    i.e. Input: Name_Finder('Abl1_sFes)
+         Output: 'Abl1$^{sFes}$'
+
+         Input: Name_Finder('Sample_Name_That_Is_Not_In_Dict')
+
+                print('Sample_Name_That_Is_Not_In_Dict is not in Name_Finder function directory. Labelled with Unknown Sample')
+
+         Output: Unknown_Sample 
+    '''
+    Sample_Name_Dict = {'Abl1_sFes':['sAbl1$^{F}$','red'],'sAbl1-F':['sAbl1$^{F}$','red'],'Abl1_sSrc':['sAbl1$^{S}$','red'],'sAbl1-S':['sAbl1$^{S}$','red'], 'Abl1_WT':['Abl1$^{wt}$','red'], 'Abl1-wt':['Abl1$^{wt}$','red'],
+                        'Blk_sFes':['sBlk$^{F}$','crimson'],'Blk_sSrc':['sBlk$^{S}$','crimson'],'Blk_WT':['Blk$^{wt}$','crimson'],
+                        'C1': ['C1', 'lightgrey'], 'C2': ['C2', 'lightgrey'], 'C3': ['C3', 'lightgrey'], 'C4': ['C4', 'lightgrey'], 'C5': ['C5', 'lightgrey'],
+                        'CRKL_sSrc':['sCrkl$^{S}$','yellow'], 'sCRKL-S':['sCrkl$^{S}$','yellow'], 'CRKL_WT':['Crkl$^{wt}$','yellow'], 'CRKL-wt':['Crkl$^{wt}$','yellow'],
+                        'superFes_sFes':['sFes$^{1}$','green'],'sFes-1':['sFes$^{1}$','green'], 'Fes_sSrc':['sFes$^{S}$','green'],'sFes-S':['sFes$^{S}$','green'],'Fes_WT':['Fes$^{wt}$','green'],'Fes-wt':['Fes$^{wt}$','green'],
+                        'Grb2_sFes':['sGrb2$^{F}$','teal'],'sGrb2-F':['sGrb2$^{F}$','teal'], 'Grb2_sSrc':['sGrb2$^{S}$','teal'], 'sGrb2-S':['sGrb2$^{S}$','teal'], 'Grb2_WT':['Grb2$^{wt}$','green'],'Grb2-wt':['Grb2$^{wt}$','green'],
+                        'Lck_sFes':['sLck$^{F}$','orange'],'sLck-F':['sLck$^{F}$','orange'], 'Lck_sSrc':['sLck$^{S}$','orange'], 'sLck-S':['sLck$^{S}$','orange'], 'Lck_WT':['Lck$^{wt}$','orange'], 'Lck-wt':['Lck$^{wt}$','orange'],
+                        'Nck1_sSrc':['sNck1$^{S}$','gold'],'sNck1-S':['sNck1$^{S}$','gold'], 'Nck1_WT':['Nck1$^{wt}$','gold'], 'Nck1-wt':['Nck1$^{wt}$','gold'],
+                        'P85A_N_sFes':['sP85A_N$^{F}$','blue'],'sP85A_N-F':['sP85A_N$^{F}$','blue'], 'P85A_N_sSrc':['sP85A_N$^{S}$','blue'], 'P85A_N_WT':['P85A_N$^{wt}$','blue'],'P85A_N-wt':['P85A_N$^{wt}$','blue'],
+                        'P85B_N_sFes':['sP85B_N$^{F}$','magenta'], 'sP85B_N-F':['sP85B_N$^{F}$','magenta'], 'P85B_N_WT':['P85B_N$^{wt}$','magenta'], 'P85B_N-wt':['P85B_N$^{wt}$','magenta'],
+                        'PTN11_C_sFes':['sPTNll_C$^{F}$','white'], 'PTN11_C_sSrc':['sPTNll_C$^{S}$','white'], 'PTN11_C_WT':['PTNll_C$^{wt}$','white'],
+                        'PTN11_N_G12R_sFes':['sPTNll_N$^{F/G-\u03B1A2-R}$','lime'],'sPTN11_N-S-G-R':['sPTNll_N$^{S/G-\u03B1A2-R}$','lime'], 'PTN11_N_G12R_WT':['sPTNll_N$^{wt/G-\u03B1A2-R}$','lime'],'sPTN11_N-wt-G-R':['sPTNll_N$^{wt/G-\u03B1A2-R}$','lime'],'PTN11_N_WT':['PTNll_N$^{wt}$','lime'],'PTN11_N-wt':['PTNll_N$^{wt}$','lime'],'PTN11_N_sSrc':['PTNll_N$^{sSrc}$','lime'],'PTN11_N_sFes':['PTNll_N$^{sFes}$','lime'],
+                        'PTN6_C_G12R_sSrc': ['sPTN6_C$^{S/G-\u03B1A2-R}$','brown'], 'sPTN6_C-S-G-R': ['sPTN6_C$^{S/G-\u03B1A2-R}$','brown'], 'PTN6_C_WT': ['PTN6_C$^{wt}$','brown'], 'PTN6_C-wt': ['PTN6_C$^{wt}$','brown'],
+                        'Src_sFes': ['sSrc$^{F}$','indigo'], 'sSrc-F': ['sSrc$^{F}$','indigo'], 'superSrc_sSrc':['sSrc$^{1}$','indigo'], 'sSrc-1':['sSrc$^{1}$','indigo'], 'Src_WT':['Src$^{wt}$','indigo'], 'Src-wt':['Src$^{wt}$','indigo'],
+                        'VAV3_sSrc': ['sVav3$^{S}$','purple'],  'sVAV3-S': ['sVav3$^{S}$','purple'], 'VAV3_WT': ['Vav3$^{wt}$','purple'], 'VAV3-wt': ['Vav3$^{wt}$','purple'],
+                        'Zr_Ti_IMAC': ['Ti/Zr-IMAC','deepskyblue'], 'Ti-Zr-IMAC': ['Ti/Zr-IMAC','deepskyblue'],
+                        'Unknown': ['Unknown Sample','black']
+                        }
+
+    if name not in Sample_Name_Dict:
+        print(name + ' is not in Name_Finder function directory. Labelled with Unknown Sample')
+        name = 'Unknown'
+
+    return Sample_Name_Dict[name]
+
+def Venn_Diagram_Finder(names):
+    '''
+    '''
+
+    Venn_Dict = {('sAbl1-F','sAbl1-S','Abl1-wt'):['sAbl1-F','sAbl1-S','Abl1-wt'],
+                 #('Blk_sFes','Blk_sSrc','Blk_WT'):['Blk_sSrc','Blk_WT'],
+                 ('sCRKL-S', 'CRKL-wt'):['sCRKL-S', 'CRKL-wt'],
+                 ('sFes-1','sFes-S','Fes-wt'):['sFes-1','sFes-S','Fes-wt'],
+                 ('sGrb2-F','sGrb2-S','Grb2-wt'):['sGrb2-F','sGrb2-S','Grb2-wt'],
+                 ('sLck-F','sLck-S','Lck-wt'):['sLck-F','sLck-S','Lck-wt'],
+                 ('sNck1-S','Nck1-wt'):['sNck1-S','Nck1-wt'],
+                 ('sP85A_N-F','P85A_N-wt'):['sP85A_N-F','P85A_N-wt'],
+                 ('sP85B_N-F','P85B_N-wt'):['sP85B_N-F','P85B_N-wt'],
+                 #('PTN11_C_sFes','PTN11_C_sSrc','PTN11_C_WT'):['PTN11_C_sFes','PTN11_C_sSrc','PTN11_C_WT'],
+                 ('sPTN11_N-S-G-R','sPTN11_N-wt-G-R','PTN11_N-wt'):['sPTN11_N-S-G-R','sPTN11_N-wt-G-R','PTN11_N-wt'],
+                 ('sPTN6_C-S-G-R','PTN6_C-wt'):['sPTN6_C-S-G-R','PTN6_C-wt'],
+                 #('sSrc-F','sSrc-1','Src-wt'):['sSrc-F','sSrc-1','Src-wt'],
+                 ('sVAV3-S','VAV3-wt'):['sVAV3-S','VAV3-wt'],
+                 'C1':['C1', 'sSrc-F', 'Ti-Zr-IMAC'],
+                 'C2':['C2', 'sSrc-F', 'Ti-Zr-IMAC'],
+                 'C3':['C3', 'sSrc-F', 'Ti-Zr-IMAC'],
+                 'C4':['C4', 'sSrc-F', 'Ti-Zr-IMAC'],
+                 'C5':['C5', 'sSrc-F', 'Ti-Zr-IMAC'],
+                 #'C1':['C1','C2', 'C4'],
+                 }
+
+    keys = Venn_Dict.keys()
+    names_present = []
+    names_absent = []
+    for x in range(len(names)):
+        for key in keys:
+            if names[x] in key:
+                if Venn_Dict[key] not in names_present:
+                    names_present.append(Venn_Dict[key])
+    
+    return names_present
+  
+def Heatmap_Sample_Order():
+    '''
+    '''
+    thing = 'Stim'
+    if thing == 'Stim':
+        Order = ['Src-wt', 'sSrc-F', 'sSrc-1',
+                 'Lck-wt', 'sLck-F', 'sLck-S',
+                 'PTN6_C-wt', 'sPTN6_C-S-G-R',
+                 'PTN11_N-wt', 'sPTN11_N-wt-G-R', 'sPTN11_N-S-G-R',
+                 'Nck1-wt', 'sNck1-S',
+                 'Grb2-wt', 'sGrb2-F', 'sGrb2-S',
+                 'P85B_N-wt', 'sP85B_N-F',
+                 'P85A_N-wt', 'sP85A_N-F',
+                 'Fes-wt', 'sFes-1', 'sFes-S',
+                 'Abl1-wt', 'sAbl1-F', 'sAbl1-S',
+                 'CRKL-wt', 'sCRKL-S',
+                 'VAV3-wt', 'sVAV3-S',
+                 'Ti-Zr-IMAC']
+    else:
+        #Take out PTN6_C since it detected no peptides
+        Order = ['Src-wt', 'sSrc-F', 'sSrc-1',
+                 'Lck-wt', 'sLck-F', 'sLck-S',
+                 'sPTN6_C-S-G-R',
+                 'PTN11_N-wt', 'sPTN11_N-wt-G-R', 'sPTN11_N-S-G-R',
+                 'Nck1-wt', 'sNck1-S',
+                 'Grb2-wt', 'sGrb2-F', 'sGrb2-S',
+                 'P85B_N-wt', 'sP85B_N-F',
+                 'P85A_N-wt', 'sP85A_N-F',
+                 'Fes-wt', 'sFes-1', 'sFes-S',
+                 'Abl1-wt', 'sAbl1-F', 'sAbl1-S',
+                 'CRKL-wt', 'sCRKL-S',
+                 'VAV3-wt', 'sVAV3-S',
+                 'Ti-Zr-IMAC']
+    return Order
