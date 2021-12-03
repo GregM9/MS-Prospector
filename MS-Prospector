@@ -1,0 +1,408 @@
+#START HERE
+
+#Importing functions and initializing master Library 'Lib'
+import tkinter.filedialog, os
+Lib = {'Sample_Names': [], 'Peptide_List': []}
+
+def File_Opening():
+    '''folder(file.txt) --> str
+
+    Function allows open tkinter file directory to open a file folder of tab seperated .txt files.
+    The function will seperate text and non text files and load each one individually.
+    Will store the file name in Lib['Sample_Names'] and create a new unique storage array for each point.
+
+    i.e. Input: open('samplefile.txt')\
+         Output: Lib['Sample_Names'] = ['samplefile, ... n]
+                 Lib['samplefile'] = []
+                 Lib['samplefile_Logo'] = []
+
+         Sends MS data information to Data_Processor(sequence, name)
+    '''
+    path = tkinter.filedialog.askdirectory()
+    for root, dirs, files in os.walk(path, topdown = False):
+        for name in files:
+            if '.txt' in name:
+                #Loading Text in Document.
+                file = open(str(os.path.join(root, name)),'r')
+                #Creating sample names from file names.
+                name = name.strip('txt').strip('.')
+                #Seeding Library with sample names and creating new directory.
+                Lib['Sample_Names'].append(name)
+                Lib[name] = []
+                Lib[name + '_Logo'] = []
+                Lib[name + 'Bcr_Sites'] = []
+                Lib[name + 'Lib'] = {}
+                #Processing MS data from text file.
+                Data_Processor(file, name)
+    return None
+
+def Peptide_Processor(peptide, name, filter_type):
+    '''str, str --> str
+
+    Fxn takes in peptides replaces phosphotyrosine [243.03] with *. Removes other numbers and brackets in chars.
+    Then seeds array in Lib (dictionary) with processed peptide.
+
+    i.e. Input: K.HDVSAHHDLNIDQSQC[160.03]NEMY[243.03]INSSQR.V
+                --> KHDVSAHHDLNIDQSQCNEMY*INSSQRV
+         Output: Lib[name] = [KHDVSAHHDLNIDQSQCNEMY*INSSQRV,...peptide(n)]
+
+    Other Abbreviations: 'Y[243.03]', 'M[147.04]', 'C[160.03]', 'S[167.00]', 'T[181.01]', 'W[202.07]'
+    '''
+    if filter_type == 'pY_only':
+        peptide = peptide.replace('[243.03]', '*')
+        chars = '1234567890[].-'
+        for char in chars:
+            peptide = peptide.replace(char, '')
+
+    if filter_type == 'phospho_only':
+        #Eliminating M, C, W mods but keeping STY
+        peptide = peptide.replace('[243.03]', '*').replace('[147.04]','').replace('[202.07]','').replace('[160.03]','')
+
+    if filter_type == 'everything':
+        None
+    
+    return peptide
+
+def Sequence_Logo_Peptide_Processor(peptide, name):
+    '''str, str --> str
+
+    Fxn takes in processed peptide finds pY sites and returns phosphoY site flanked by n bases on either side.
+
+    i.e. Input: K.HDVSAHHDLNIDQSQCNEMY*INSSQR.V
+                --> NEMYINS
+         Output: Lib[name_logo] = [NEMYINS,...logo]
+    '''
+    chars = '1234567890[].-'
+    for char in chars:
+        peptide = peptide.replace(char, '')
+
+    residue_buffer = 3
+    X_Buffer = residue_buffer*'X'
+    peptide = X_Buffer + peptide + X_Buffer
+    
+    phospho_index1 = [0]
+    for star in range(peptide.count('*')):
+        phospho_index1.append(peptide.index('*', phospho_index1[-1] + 1) - star)
+    phospho_index = phospho_index1[1:]
+
+    peptide = peptide.replace('*','')
+
+    for x in range(len(phospho_index)):
+        Lib[name + '_Logo'].append(peptide[phospho_index[x]-residue_buffer-1:phospho_index[x]+residue_buffer])
+        
+    return None
+
+def Peptide_Matrix_Generator(peptide_array, name):
+    '''array[str] --> array[int]
+
+    Function takes in a list of peptides and outputs an ordered array of counts of peptides from input.
+    Ordered peptide list is found in Lib['Unique_Peptide_List']
+
+    i.t. Input: Lib[name] = [GFHYRYI, GHFYRYI, DFGRTYIP, ... peptide(n)]
+         Lib['Unique_Peptide_List'] = [GFHYRYI, DFGRTYIP, ... peptide(m)] 
+
+         Output: Lib[name + '_Matrix'] = [2, 1, ... peptide(m)]
+    '''
+    Lib[name + '_Matrix'] = []
+    for peptide in Lib['Unique_Peptide_List']:
+        Lib[name + '_Matrix'].append(Lib[name].count(peptide))
+    Lib['Matrix'].append(Lib[name + '_Matrix'])
+
+    return None
+    
+def Data_Output_Function(Matrix, Stats, SequenceLogo, Bcr_Abl_Site_Matrix, Protein_Map):
+    '''Dict --> .txt files
+
+    Function has two main outputs:
+    1. Peptide_Enrichment_Matrix.
+       Peptide Enrichment Statistics. Data matrix of all peptides and peptide counts for each domain. Column is SH2 domain peptide counts (str) row is unique pTyr peptide (str).
+    2. Sample_Statistics.
+       Total and unique peptide counts from samples being analyzed. Formatted as tab seperated table.
+    3. Sequence_Logo_Output.txt.
+       List of peptides seuqences used for sequence logo generation.
+    '''
+    #1 Peptide_Enrichment_Matrix
+    if Matrix == True:
+        matrix_output = open('Peptide_Enrichment_Matrix.txt', 'w')
+        matrix_output.write('Peptides')
+        matrix_output.write('\t')
+        for name in Lib['Sample_Names']:
+            matrix_output.write(str(name))
+            matrix_output.write('\t')
+        matrix_output.write('\n')
+
+        for x in range(len(Lib['Unique_Peptide_List'])):
+            matrix_output.write(str(Lib['Unique_Peptide_List'][x]))
+            matrix_output.write('\t')
+            for name in Lib['Sample_Names']:
+                matrix_output.write(str(Lib[name + '_Matrix'][x]))
+                matrix_output.write('\t')
+            matrix_output.write('\n')
+        matrix_output.close()
+
+    #2 Sample_Statistics
+    if Stats == True:
+        from Name_Directory import Heatmap_Sample_Order
+        stats_output = open('Sample_Stats.txt', 'w')
+        stats_output.write('Name')
+        stats_output.write('\t')
+        stats_output.write('Total pTyr Peptides')
+        stats_output.write('\t')
+        stats_output.write('Unique pTyr Peptides')
+        stats_output.write('\n')
+        Sample_Order = Heatmap_Sample_Order()
+        for name in Sample_Order:
+            stats_output.write(str(name))
+            stats_output.write('\t')
+            stats_output.write(str(len(Lib[name])))
+            stats_output.write('\t')
+            stats_output.write(str(len(set(Lib[name]))))
+            stats_output.write('\t')
+            stats_output.write('\n')
+        stats_output.close()
+
+    # Sequence_Logo_Output
+    if SequenceLogo == True:
+        sequence_logo_output = open('Sequence_Logo_Output.txt', 'w')
+        for name in Lib['Sample_Names']:
+            sequence_logo_output.write(str(name))
+            sequence_logo_output.write('\t')
+            for peptide in Lib[name + '_Logo']:
+                sequence_logo_output.write(peptide)
+                sequence_logo_output.write('\t')
+            sequence_logo_output.write('\n')
+        sequence_logo_output.close()
+
+    if Bcr_Abl_Site_Matrix == True:
+        Bcr_Abl_output = open('Bcr_Abl_Output_Matrix.txt', 'w')
+        #Filling Out PhosphoY Site Locations
+        Bcr_Abl_output.write('\t')
+        for site in Bcr_Abl_Sites:
+            Bcr_Abl_output.write(str(site))
+            Bcr_Abl_output.write('\t')
+        Bcr_Abl_output.write('\n')
+        #Filling Out Peptide Identities
+        Bcr_Abl_output.write('\t')
+        for peptide in Bcr_Abl_Sites:
+            Bcr_Abl_output.write(str(Bcr_Abl_Sites[peptide]))
+            Bcr_Abl_output.write('\t')
+        Bcr_Abl_output.write('\n')
+        #Filling Out Sample Matrices
+        for sample in Lib['Sample_Names']:
+            Bcr_Abl_output.write(str(sample))
+            Bcr_Abl_output.write('\t')
+            for datapoint in Lib[sample + 'Bcr_Sites_Tracker']:
+                Bcr_Abl_output.write(str(datapoint))
+                Bcr_Abl_output.write('\t')
+            Bcr_Abl_output.write(str(Lib[sample + 'Bcr_Sites_Matrix_Unknown']))
+            Bcr_Abl_output.write('\t')
+            Bcr_Abl_output.write(str(len(Lib[sample + 'Bcr_Sites'])))
+            Bcr_Abl_output.write('\t')
+            Bcr_Abl_output.write(str(len(set(Lib[sample + 'Bcr_Sites']))))
+            Bcr_Abl_output.write('\n')
+        Bcr_Abl_output.close()
+
+    if Protein_Map == True:
+        Protein_Map_Output = open('Protein_Peptide_Map.txt', 'w')
+        for name in Lib['Sample_Names']:
+            Protein_Map_Output.write(str(name))
+            Protein_Map_Output.write('\t')
+            ordered_dict = {k: v for k, v in sorted(Lib[name + 'Lib'].items(), key=lambda item: item[1],reverse=True)}
+            Protein_Map_Output.write(str(len(ordered_dict)))
+            Protein_Map_Output.write('\t')
+            for protein in ordered_dict:
+                Protein_Map_Output.write(str(protein))
+                Protein_Map_Output.write('\t')
+            Protein_Map_Output.write('\n')
+                               
+    return None
+
+def Bcr_Abl_Finder_Function():
+    '''
+    '''
+    global Bcr_Abl_Sites
+    Bcr_Abl_Sites = {'Bcr_Y58-p': 'QERFRMIY*LQTLLAK', 'Bcr_Abl_Y177-p': 'ADAEKPFY*VNVEFHH', 'Bcr_Y231-p': 'GDASRPPY*RGRSSES',
+                     'Bcr_Abl_Y246-p': 'SCGVDGDY*EDAELNP', 'Bcr_Abl_Y276-p': 'PPWPPLEY*QPYQSIY', 'Bcr_Abl_Y276-p/Bcr_Y279-p': 'LEY*QPY*QSIYVGG', 'Bcr_Y279-p': 'PPLEYQPY*QSIYVGG',
+                     'Bcr_Y279-p/Bcr_Y283-p': 'LEYQPY*QSIY*VGG','Bcr_Abl_Y276-p/Bcr_Y283-p': 'LEY*QPYQSIY*VGG', 'Bcr_Y283-p': 'YQPYQSIY*VGGMMEG',
+                     'Bcr_Abl_Y276-p/Bcr_Y279-p/Bcr_Y283-p': 'LEY*QPY*QSIY*VGG', 'Bcr_Y328-p': 'FEDCGGGY*TPDCSSN',
+                     'Bcr_Abl_Y360-p': 'VSPSPTTY*RMFRDKS', 'Bcr_Y436-p': 'SFGTPPGY*GCAADRA', 'Bcr_Y455-p': 'RHQDGLPY*IDDSPSS', 'Bcr_Y513-p': 'ILASEETY*LSHLEAL',
+                     'Bcr_Y554-p':'FFKVPELY*EIHKEFY', 'Bcr_Y554-p/Bcr_Y561-p': 'PELY*EIHKEFY*DGLF', 'Bcr_Y561-p': 'YEIHKEFY*DGLFPRV', 'Bcr_Y591-p': 'LASQLGVY*RAFVDNY',
+                     'Bcr_Y598-p': 'YRAFVDNY*GVAMEMA', 'Bcr_Y644-p':'NSLETLLY*KPVDRVT', 'Bcr_Abl_Y669-p': 'DDESPGLY*GFLNVIV', 'Bcr_Y756-p': 'QQYDCKWY*IPLTDLS', 'Bcr_Y844-p':'HSRNGKSY*TFLISSD',
+                     'Bcr_Y852-p':'TFLISSDY*ERAEWRE', 'Bcr_Y910-p': 'DDESPGLY*GFLNVIV', 'Bcr_Y1089-p': 'GMEEVGIY*RVSGVAT',  'Bcr_Abl_Y1053-p': 'RLMTGDTY*TAHAGAK',
+                     'Abl_Y70-p': 'PNLFVALY*DFVASGD', 'Abl_Y93-p': 'EKLRVLGY*NHNGEWC', 'Abl_Y115-p': 'QGWVPSNY*ITPVNSL', 'Abl_Y128-p': 'SLEKHSWY*HGPVSRN',
+                     'Abl_Y139-p':'VSRNAAEY*LLSSGIN', 'Abl_Y167-p':'QRSISLRY*EGRVYHY', 'Abl_Y172-p':'LRYEGRVY*HYRINTA', 'Abl_Y174-p':'YEGRVYHY*RINTASD', 'Abl_Y185-p': 'TASDGKLY*VSSESRF',
+                     'Abl_Y215-p':'GLITTLHY*PAPKRNK', 'Abl_Y226-p':'KRNKPTVY*GVSPNYD','Abl_Y226-p/Abl_Y232-p': 'PTVY*GVSPNY*DKWE', 'Abl_Y232-p':'VYGVSPNY*DKWEMER',
+                     'Abl_Y253-p':'HKLGGGQY*GEVYEGV','Abl_Y253-p/Abl_Y257-p': 'GGGQY*GEVY*EGV', 'Abl_Y257-p':'GGQYGEVY*EGVWKKY',
+                     'Abl_Y264-p':'YEGVWKKY*SLTVAVK', 'Abl_Y312-p':'CTREPPFY*IITEFMT', 'Abl_Y320-p':'IITEFMTY*GNLLDYL', 'Abl_Y393-p':'RLMTGDTY*TAHAGAK', 'Abl_Y413-p':'TAPESLAY*NKFSIKS',
+                     'Abl_Y456-p':'YELLEKDY*RMERPEG', 'Abl_Y469-p':'EGCPEKVY*ELMRACW', 'Abl_Y1064-p': 'LEAGKNLY*TFCVSYV', 'Abl_Y1070-p':'LYTFCVSY*VDSIQQM'
+                     }
+
+    def right_index_finder(peptide):
+        '''
+        '''
+        test_peptide_length = len(peptide)
+        test_peptide_phosphoY_position = peptide.index('*')
+        if test_peptide_length - test_peptide_phosphoY_position > 6:
+            right_index = test_peptide_phosphoY_position + 7
+        else:
+            right_index = test_peptide_length - test_peptide_phosphoY_position
+        return right_index
+
+    def left_index_finder(peptide):
+        '''
+        '''
+        test_peptide_length = len(peptide)
+        test_peptide_phosphoY_position = peptide.index('*')
+        if test_peptide_phosphoY_position > 5:
+            left_index = test_peptide_phosphoY_position - 6
+        else:
+            left_index = 0
+        return left_index
+
+    def multiple_phospho_finder(peptide):
+        '''
+        '''
+        number_phospho = peptide.count('*')
+        phospho_indexes = [0]
+        for phospho in range(number_phospho):
+            phospho_indexes.append(peptide.index('*', phospho_indexes[-1]+1))
+        phospho_indexes1 = phospho_indexes[1:]
+        multi_phospho_peptide = peptide[phospho_indexes1[0]-2:phospho_indexes1[-1]+2]
+        return multi_phospho_peptide
+                                   
+    dict_keys = list(Bcr_Abl_Sites.keys())
+    for name in Lib['Sample_Names']:
+        Lib[name + 'Bcr_Sites_Matrix'] = [0 for n in range(len(Bcr_Abl_Sites))]
+        Lib[name + 'Bcr_Sites_Tracker'] = [[] for n in range(len(Bcr_Abl_Sites))]
+        Lib[name + 'Bcr_Sites_Matrix_Unknown'] = []
+        #print(name)
+        for y in range(len(Lib[name + 'Bcr_Sites'])):
+            if Lib[name + 'Bcr_Sites'][y].count('*') == 1:
+                curated_peptide = str(Lib[name + 'Bcr_Sites'][y][left_index_finder(Lib[name + 'Bcr_Sites'][y]):right_index_finder(Lib[name + 'Bcr_Sites'][y])])
+                #print(curated_peptide, "curated_peptide")
+                for x in range(len(dict_keys)):
+                    if curated_peptide in str(Bcr_Abl_Sites[dict_keys[x]]):
+                        Lib[name + 'Bcr_Sites_Matrix'][x] = Lib[name + 'Bcr_Sites_Matrix'][x] + Lib[name + 'Bcr_Sites_Matrix'][x] + 1
+                        Lib[name + 'Bcr_Sites_Tracker'][x].append(curated_peptide)
+                        print(curated_peptide, Bcr_Abl_Sites[dict_keys[x]])
+                        break
+                    if y == len(Lib[name + 'Bcr_Sites']) and dict_keys[x] not in Lib[name + 'Bcr_Sites_Tracker']:
+                        Lib[name + 'Bcr_Sites_Matrix_Unknown'].append(curated_peptide)
+                        ##print(curated_peptide, "Unknown")
+                        
+            if Lib[name + 'Bcr_Sites'][y].count('*') > 1:
+                curated_peptide = str(multiple_phospho_finder(Lib[name + 'Bcr_Sites'][y]))
+                for x in range(len(dict_keys)):
+                    if curated_peptide in str(Bcr_Abl_Sites[dict_keys[x]]):
+                        Lib[name + 'Bcr_Sites_Matrix'][x] = Lib[name + 'Bcr_Sites_Matrix'][x] + Lib[name + 'Bcr_Sites_Matrix'][x] + 1
+                        Lib[name + 'Bcr_Sites_Tracker'][x].append(curated_peptide)
+                        #print(curated_peptide, Bcr_Abl_Sites[dict_keys[x]])
+                        break
+                    if y == len(Lib[name + 'Bcr_Sites']) and dict_keys[x] not in Lib[name + 'Bcr_Sites_Tracker']:
+                        Lib[name + 'Bcr_Sites_Matrix_Unknown'].append(curated_peptide)
+                        #print(curated_peptide, "Unknown")
+            else:
+                None
+
+        
+       
+    return None
+
+def Data_Processor(file, name):
+    '''seqfile.txt(str), name(str) --> Lib[name] = [peptidelist], Lib[name_logo] = [peptidesequencelogolist]
+
+    This is master data processor that seeds dictionary will all actionable items.
+    Seeding dictionaries manually to avoid use of paackages.
+    Functions linked to this:
+    1.Peptide_Processor(peptide,name) #From column10
+    2.Sequence_Logo_Peptide_Processor(processed_peptide,name) #from fxn 1.
+    3.Peptide_Matrix_Generator(array of data from sample, name) #once processing is done.
+    '''
+    seqfile = file.readlines()
+    for x in range(len(seqfile)):
+        if x == 0:
+            temp0 = seqfile[x].split('\t')
+            if len(temp0) > 2 and 'peptide' in temp0:
+                column_index = temp0.index('peptide')
+                protein_column_index = temp0.index('protein')
+            else:
+                pass
+        elif x != 0:
+            peptide = seqfile[x].replace('\n','').split('\t')[column_index]
+            processed_peptide = Peptide_Processor(peptide, name, filter_type='phospho_only')
+            Lib['Peptide_List'].append(processed_peptide)
+            Lib[name].append(processed_peptide)
+            Sequence_Logo_Peptide_Processor(Peptide_Processor(peptide, name, filter_type='pY_only'), name)
+
+            #Protein Name
+            protein = seqfile[x].replace('\n','').split('\t')[protein_column_index]
+            if protein in Lib[name + 'Lib']:
+                Lib[name + 'Lib'][protein] = Lib[name + 'Lib'][protein] + 1
+            else:
+                Lib[name + 'Lib'][protein] = 1
+            #Looking for Bcr Abl Proteins
+            if 'P00519' in protein or 'P11274' in protein:
+                Lib[name + 'Bcr_Sites'].append(Peptide_Processor(peptide, name, filter_type='pY_only'))
+        else:
+            None
+
+    return None
+
+def Data_Finalizer():
+    '''None --> Finalized Peptide List Processing
+
+    Once Function Goes through
+    '''
+
+    def Graphing_Functions(tSNE_Graph,Heatmap,Venn_Graph,Sequence_Logo_Graph, Bcr_Abl_Graph):
+        '''fxn,fxn,fxn,fxn --> Graph,Graph,Graph,Graph
+
+        Function is central control point for graphing functions.
+        In data processing function can set anything to True/False to generate graph.
+        '''
+        if tSNE_Graph == True:
+            #Analyze tSNE
+            from Dimensionality_Reduction import tSNE
+            principal_components = tSNE(Lib['Matrix'], perplexity=2.25)
+
+            #Graph tSNE --> STILL WORKING ON GRAPHING PORTION
+            from Graphing import tSNE_Graph
+            tSNE_Graph(data=principal_components, Lib=Lib)
+        
+        if Heatmap == True:
+            from Graphing import Heatmap
+            Heatmap(Data_Matrix=Lib['Matrix'], Names=Sample_Order)
+        
+        if Venn_Graph == True:
+            from Graphing import Venn_Graph
+            Venn_Graph(Lib=Lib)
+
+        if Sequence_Logo_Graph == True:
+            from Graphing import Sequence_Logo_Graph
+            Sequence_Logo_Graph(Lib=Lib)
+
+        if Bcr_Abl_Graph == True:
+            from Graphing import Bcr_Abl_Grapher
+            Bcr_Abl_Grapher(Lib, Bcr_Abl_Sites)
+
+        return None
+
+    Lib['Unique_Peptide_List'] = list(set(Lib['Peptide_List']))
+    Lib['Matrix'] = []
+
+    from Name_Directory import Heatmap_Sample_Order
+    Sample_Order = Heatmap_Sample_Order()
+    for name in Lib['Sample_Names']:
+    #for name in Sample_Order:
+        Peptide_Matrix_Generator(Lib[name], name)
+                
+    #Writing to txt file output --> Matrix, Stats, SequenceLogo boolean operator
+    Data_Output_Function(Matrix=False, Stats=False, SequenceLogo=False, Bcr_Abl_Site_Matrix=False, Protein_Map=False)
+    #Graphing Functions Control
+    Graphing_Functions(tSNE_Graph=True,Heatmap=False,Venn_Graph=False,Sequence_Logo_Graph=False, Bcr_Abl_Graph=False)
+
+    return None
+    
+File_Opening()
+Bcr_Abl_Finder_Function()
+Data_Finalizer()
