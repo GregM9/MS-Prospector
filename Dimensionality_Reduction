@@ -1,0 +1,255 @@
+#Graphing Function Starts Here
+def tSNE_Graph(data, Lib):
+    '''array[int], dict --> scatterplot.png
+
+    Graphing the tSNE components calculated in Dimensionality_Reduction function. Passes whole library for processing.
+    File is saved in directory 'Moritz_Figures/tSNE.png'
+    '''
+    import matplotlib.pyplot as plt
+    import matplotlib.font_manager as font_manager
+    from Name_Directory import Name_Finder
+    import math
+
+    #Set Type of font
+    font = font_manager.FontProperties(family='Arial', weight='bold',style='normal',size=20)
+    graph_font = font_manager.FontProperties(family='Arial',style='normal',size=14)
+    
+    ##Graph Aesthetics
+    plt.figure(figsize = (10,10))
+    plt.xlabel('tSNE 1', fontproperties=font)
+    plt.ylabel('tSNE 2', labelpad=2, fontproperties=font)
+    plt.axis('equal');
+                      
+    #Calculating relative marker size based on unique pTyr peptide counts.
+    Marker_Size = [len(set(Lib[Lib['Sample_Names'][x]])) for x in range(len(Lib['Sample_Names']))]
+    Marker_Size1 = [Marker_Size[y]/(sorted(Marker_Size)[0]) for y in range(len(Marker_Size))]
+    Marker_Size2 = [10*2*Marker_Size1[z] for z in range(len(Marker_Size1))]
+    
+    graphing_space = [math.sqrt(Marker_Size2[x]) for x in range(len(Marker_Size2))]
+
+    for x in range(len(Lib['Sample_Names'])):
+        Name_Colour = Name_Finder(Lib['Sample_Names'][x])
+        plt.text(data[x][0] - graphing_space[x], data[x][1] + graphing_space[x], label=Name_Colour[0], font=graph_font, s=Name_Colour[0])
+        #plt.scatter(data[x][0], data[x][1], c=Name_Colour[1], marker="o", edgecolors='black', s=Marker_Size2[x], alpha=1)
+        plt.scatter(data[x][0], data[x][1], c=Name_Colour[1], marker="o", edgecolors='black', alpha=1)
+        
+
+    #Creating Legend
+    sizes = sorted(Marker_Size2)
+    peptides = sorted(Marker_Size)
+
+    print(sorted(Marker_Size))
+
+    low = plt.scatter([],[], s=sizes[-13], marker='o', color='w', edgecolors='black')
+    lowmed = plt.scatter([],[], s=sizes[-7], marker='o', color='w', edgecolors='black')
+    med = plt.scatter([],[], s=sizes[-3], marker='o', color='w', edgecolors='black')
+    medhigh = plt.scatter([],[], s=sizes[-2], marker='o', color='w', edgecolors='black')
+    high = plt.scatter([],[], s=sizes[-1], marker='o', color='w', edgecolors='black')
+
+    #Stimulated ('500', '1000', '2000', '3500', '6500'), [-1], [-2], [-4], [-10], [-14]
+    #Unstimulated ('25', '40', '100', '200', '400'), [-1], [-2], [-3], [-7], [-13]
+    '''
+    plt.legend((low, lowmed, med, medhigh, high),
+               ('25', '40', '100', '200', '400'),
+               loc='upper left',
+               ncol=1,
+               title=' Unique pTyr \n   Peptides',
+               prop=graph_font,
+               framealpha=1,
+               shadow=True,
+               edgecolor='black',
+               borderpad=0.65,
+               labelspacing=0.9,
+               borderaxespad=0.3,
+               columnspacing=0.8)
+    '''
+    
+    plt.savefig('Moritz_Figures/tSNE.png',dpi=600,transparent='True',bbox_inches='tight')
+    
+    return None
+
+
+def Heatmap(Data_Matrix, Names):
+    '''2D array [int], array [str] --> heatmapgraph.png
+
+    Scatter Plots correlation values (input from function can be spearman, pearson etc.)
+    '''
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
+    import matplotlib.font_manager as font_manager
+    from Name_Directory import Name_Finder
+
+    sns.set(font="Arial")
+    sns.set(font_scale=1.2)
+    font = font_manager.FontProperties(family='Arial',style='normal',size=10)
+    
+    plt.figure(figsize = (15,15),tight_layout=True)
+
+    sample_names =[Name_Finder(Names[x])[0] for x in range(len(Names))]
+
+    fig = sns.heatmap(np.corrcoef(Data_Matrix),
+                    vmin=0,vmax=1,center=0.5,
+                    annot=False,
+                    cmap='Reds',
+                    linewidths=0.01, linecolor='black',
+                    square=True,
+                    xticklabels=sample_names, yticklabels=sample_names,
+                    cbar_kws={'label': 'Pearson Correlation', 'orientation': 'vertical','anchor': (0,0.5), 'pad':0.01, 'shrink': 0.5}
+                    )
+    
+    fig.set_xticklabels(fig.get_xticklabels(), fontsize=16, rotation='vertical')
+    fig.set_yticklabels(fig.get_yticklabels(), fontsize=16, rotation='horizontal')
+    
+
+    plt.savefig('Moritz_Figures/Heatmap.png',dpi=100,transparent='True',bbox_inches='tight')
+    
+    return None
+    
+
+def Venn_Graph(Lib):
+    '''
+    '''
+    from matplotlib_venn import venn2, venn2_circles, venn2_unweighted, venn3, venn3_circles, venn3_unweighted
+    import matplotlib.pyplot as plt
+    import matplotlib.font_manager as font_manager
+    import numpy as np
+    import random
+    from Name_Directory import Name_Finder
+    from Name_Directory import Venn_Diagram_Finder
+
+    #Venn Diagram Colours and font control
+    font = font_manager.FontProperties(family='Arial', weight='bold',style='normal',size=20)
+    
+    sample = Venn_Diagram_Finder(Lib['Sample_Names'])
+    for name_list in sample:
+        #venn_data = [set(Lib[name_list[x] + '_no_filter']) for x in range(len(name_list))]
+        venn_data = [set(Lib[name_list[x]]) for x in range(len(name_list))]
+        if len(name_list) == 2:
+            venn = venn2_unweighted(venn_data,
+                                    set_labels = [Name_Finder(name_list[x])[0] for x in range(len(name_list))],
+                                    set_colors = ('#FFC20A', '#0C7BDC', '#C0C0C0'),
+                                    alpha=0.7)
+            venn2_circles((1,1,1))
+            for text in venn.set_labels:
+                text.set_fontsize(20)
+            for y in range(len(venn.subset_labels)):
+                if venn.subset_labels[y] is not None:
+                    venn.subset_labels[y].set_fontsize(16)
+       
+            plt.savefig('Moritz_Figures/' + str(name_list[0]) + '.png',dpi=100,transparent='True',bbox_inches='tight')
+            plt.close()
+
+        elif len(name_list) == 3:
+            venn = venn3_unweighted(venn_data,
+                                    set_labels = [Name_Finder(name_list[x])[0] for x in range(len(name_list))],
+                                    set_colors = ('#FFC20A', '#0C7BDC', '#C0C0C0'),
+                                    alpha=0.7)
+            venn3_circles((1,1,1,1,1,1,1))
+            for text in venn.set_labels:
+                text.set_fontsize(20)
+            for y in range(len(venn.subset_labels)):
+                if venn.subset_labels[y] is not None:
+                    venn.subset_labels[y].set_fontsize(16)
+            
+            plt.savefig('Moritz_Figures/' + str(name_list[0]) + '.png',dpi=600,transparent='True',bbox_inches='tight')
+            plt.close()
+
+        else:
+            None
+
+    return None
+
+def Sequence_Logo_Graph(Lib):
+    '''
+    '''
+    import matplotlib.pyplot as plt
+    import logomaker
+    import matplotlib.font_manager as font_manager
+    from Name_Directory import Name_Finder
+
+    title_font = font_manager.FontProperties(family='Arial', weight='bold',style='normal',size=24)
+    font = font_manager.FontProperties(family='Arial',style='normal',size=20)
+
+    samples = Lib['Sample_Names']
+    
+    for x in range(len(samples)):
+        if len(Lib[samples[x] + '_Logo']) > 2:
+            #Options: 'counts' , 'probability' , 'weight' , 'information'
+            ww_df = logomaker.alignment_to_matrix(Lib[samples[x] + '_Logo'],to_type='probability')
+
+            # create Logo object
+            ww_logo = logomaker.Logo(ww_df,
+                         font_name='Arial',
+                         color_scheme='dmslogo_funcgroup',
+                         #color_scheme='dmslogo_charge',   
+                         vpad=.1,
+                         width=.8)
+
+            # style using Logo methods
+            ww_logo.ax.set_xticklabels(labels=['0','-3','-2','-1','0','1','2','3'],font=font)
+            ww_logo.ax.set_yticklabels(labels=['0','20','40','60','80','100'], font=font)
+            
+            #Style Y
+            ww_logo.fade_glyphs_in_probability_logo(v_alpha1=0.1)
+            ww_logo.style_single_glyph(3,'Y', floor=0.0, color='black')
+
+            #Axes settings and titles
+            #ww_logo.ax.grid(False)
+            #ww_logo.ax.spines['bottom'].set_color('black')
+            #ww_logo.ax.spines['top'].set_color('black')
+            #ww_logo.ax.spines['left'].set_color('black')
+            #ww_logo.ax.spines['right'].set_color('black')
+            ww_logo.ax.set_ylabel('Frequency (%)',font=title_font)
+            ww_logo.ax.set_xlim([-0.5, len(ww_df)-0.5])
+            ww_logo.ax.set_title(Name_Finder(samples[x])[0], font=title_font)
+
+            plt.savefig('Moritz_Figures/' + str(samples[x]) + 'seq_logo.png',dpi=600,transparent='True',bbox_inches='tight')
+            plt.close()
+
+        else:
+            None
+
+    return None
+
+def Bcr_Abl_Grapher(Lib, Sites):
+    '''
+    '''
+    import matplotlib.pyplot as plt
+    import matplotlib.font_manager as font_manager
+    from Name_Directory import Name_Finder
+    import math
+
+    #Set Type of font
+    font = font_manager.FontProperties(family='Arial', weight='bold',style='normal',size=20)
+    graph_font = font_manager.FontProperties(family='Arial',style='normal',size=14)
+    
+    ##Graph Aesthetics
+    plt.figure(figsize = (10,30))
+    plt.ylabel([Name_Finder(name)[0] for name in Lib['Sample_Names']], fontproperties=font)
+    #plt.ylabel('tSNE 2', labelpad=2, fontproperties=font)
+    plt.xlim([-1, len(Sites)+0.5])
+    plt.ylim([-0.5, len(Lib['Sample_Names'])-0.5])
+
+    def size_determinant(sample):
+        '''
+        '''
+        if sample == 0:
+            return "skip"
+        else:
+            size = (10*(sample/2))*2
+
+        return size
+
+    for x in range(len(Lib['Sample_Names'])):
+        name = Lib['Sample_Names'][x]
+        #Name_Colour = Name_Finder(name)
+        for y in range(len(Lib[name + 'Bcr_Sites_Matrix'])):
+            size = size_determinant(Lib[name + 'Bcr_Sites_Matrix'][y])
+            if size == "skip":
+                pass
+            else:
+                plt.scatter(y/2, x, c='r', marker="o", edgecolors='black', s=size, alpha=1)
+
+
+    plt.show()
